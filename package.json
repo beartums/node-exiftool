@@ -1,0 +1,23 @@
+{
+  "name": "exiftool",
+  "version": "0.1.0-alpha",
+  "description": "wrapper for exiftool.exe, using stay_open for fast multi-file exif extraction",
+  "keywords": [
+    "exif",
+    "exiftool",
+    "fast"
+  ],
+  "author": "Eric Griffith <eric@griffithnet.com>",
+  "bugs": {
+    "url": "https://github.com/beartums/node-exiftool/issues"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "q": "~1.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/beartums/node-exiftool.git"
+  },
+  "engine": "node 0.10.x"
+}
