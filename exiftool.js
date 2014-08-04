@@ -10,18 +10,20 @@ var isLoaded = false;
 // integer (incremented) key to current exif request
 var index = 0;
 // Properly scoped callback object, properties correspond to index and callbacks
-var callbacks = {};
+var successCBs = {};
+var failureCBs = {};
 var exifString = '';
 
 
-function testComplete() {
+function tryComplete(useCBs,removeCBs) {
   if (/\{ready\d{1,8}\}/mi.test(exifString)) {
     var rtnArray = /([\s\S]*)\{ready(\d{1,10})\}/mi.exec(exifString);
     var rtn = rtnArray[1];
     var idx = rtnArray[2];
-    var callback = callbacks['ix' + idx.toString()];
+    var callback = useCBs['ix' + idx.toString()];
     callback(rtn);
-    delete callbacks['ix' + idx.toString()];
+    delete useCBs['ix' + idx.toString()];
+    delete removeCBs['ix' + idx.toString()];
     exifString = exifString.replace(rtn + '{ready' + idx + '}','');
   }
 }
@@ -36,13 +38,13 @@ var load = function(exiftoolPath) {
   isLoaded = true;
   exif.stderr.on('data', function(err) {
     console.log('Error: ' + err.toString());
-    exifString += data;
-    testComplete();
+    exifString += err.toString();
+    tryComplete(failureCBs,successCBs);
   });
   exif.stdout.on("data", function(data) {
     //console.log(data.toString());
     exifString += data;
-    testComplete();
+    tryComplete(successCBs,failureCBs);
   });
 };
 exports.load = load;
@@ -53,8 +55,8 @@ exports.load = load;
   @param {array} args array of arguments for exiftool
   @param {function} callback Recieving the object returned from exiftool
 **/
-exports.parse = function(filePath,args,callback) {
-  runCommand(filePath,args, callback);
+exports.parse = function(filePath,args,callback, failure) {
+  runCommand(filePath,args, callback, failure);
 }
 /**
   same as parse, but returns a promise of a value rather than running the passed callback
@@ -66,6 +68,8 @@ exports.parsePromise = function(filePath,args) {
   runCommand(filePath,args, function(data) {
     //console.log('Promise: ' + data);
     deferred.resolve(data);
+  }, function(data) {
+    deferred.reject(data);
   });
   return deferred.promise;
 }
@@ -75,9 +79,10 @@ exports.parsePromise = function(filePath,args) {
   @param {array} args array of arguments for exiftool
   @param {function} cb Recieving the object returned from exiftool
 **/
-function runCommand(filePath, args, cb) {
+function runCommand(filePath, args, cb, failure) {
   if (!isLoaded) load();  // load exiftool, if not loaded
-  callbacks['ix' + index.toString()] = cb; // queue and index the callback
+  successCBs['ix' + index.toString()] = cb; // queue and index the sucess callback
+  failureCBs['ix' + index.toString()] = failure; // queue and index the failure callback
   var flags = '';
   for (var i = 0; i < args.length; i++) flags += args[i] + '\n';
   var command = flags + filePath.replace(/\\/g,'/') + '\n-execute' + index++ + '\n';
