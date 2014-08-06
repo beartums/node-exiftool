@@ -19,5 +19,6 @@
     "type": "git",
     "url": "https://github.com/beartums/node-exiftool.git"
   },
+  "main": "exiftool.js",
   "engine": "node 0.10.x"
 }
